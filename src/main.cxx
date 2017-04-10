@@ -7,11 +7,13 @@
 #include <glm/glm.hpp>
 #include "linmath.h"
 #include "curve.hpp"
+// #include "ImGuiUtils.h"
+#include "IconsFontAwesome.h"
 
 
 
 
-static const struct
+static struct
 {
     float x, y;
     float r, g, b;
@@ -62,7 +64,8 @@ int main(int, char**)
     GLuint vertex_buffer, vertex_shader, fragment_shader, program;
     GLint mvp_location, vpos_location, vcol_location;
     glfwMakeContextCurrent(window);
-    glfwSwapInterval(0);
+    // glfwSwapInterval(0);
+
     gladLoadGLLoader((GLADloadproc) glfwGetProcAddress);
 
     // Setup ImGui binding
@@ -70,13 +73,23 @@ int main(int, char**)
 
     // Load Fonts
     // (there is a default font, this is only if you want to change it. see extra_fonts/README.txt for more details)
-    //ImGuiIO& io = ImGui::GetIO();
-    //io.Fonts->AddFontDefault();
-    //io.Fonts->AddFontFromFileTTF("../../extra_fonts/Cousine-Regular.ttf", 15.0f);
-    //io.Fonts->AddFontFromFileTTF("../../extra_fonts/DroidSans.ttf", 16.0f);
-    //io.Fonts->AddFontFromFileTTF("../../extra_fonts/ProggyClean.ttf", 13.0f);
-    //io.Fonts->AddFontFromFileTTF("../../extra_fonts/ProggyTiny.ttf", 10.0f);
+    ImGuiIO& io = ImGui::GetIO();
+    // io.Fonts->AddFontDefault();
+    io.Fonts->AddFontFromFileTTF("./deps/imgui/extra_fonts/Roboto-Regular.ttf", 14.0f);
+    // io.Fonts->AddFontFromFileTTF("./deps/imgui/extra_fonts/Roboto-Medium.ttf", 13.0f);
+    // io.Fonts->AddFontFromFileTTF("./deps/imgui/extra_fonts/Cousine-Regular.ttf", 15.0f);
+    // io.Fonts->AddFontFromFileTTF("../../extra_fonts/DroidSans.ttf", 16.0f);
+    // io.Fonts->AddFontFromFileTTF("../../extra_fonts/ProggyClean.ttf", 13.0f);
+    // io.Fonts->AddFontFromFileTTF("../../extra_fonts/ProggyTiny.ttf", 10.0f);
     //io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f, NULL, io.Fonts->GetGlyphRangesJapanese());
+
+    // ImGuiIO& io = ImGui::GetIO();
+    // io.Fonts->AddFontDefault();
+    ImFontConfig config;
+    config.MergeMode = true;
+    const ImWchar icon_ranges[] = { ICON_MIN_FA, ICON_MAX_FA, 0 };
+    io.Fonts->AddFontFromFileTTF("./deps/imgui/extra_fonts/fontawesome-webfont.ttf", 13.0f, &config, icon_ranges);
+
 
 
     GLuint VertexArrayID;
@@ -89,7 +102,7 @@ int main(int, char**)
 
     glGenBuffers(1, &vertex_buffer);
     glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_DYNAMIC_DRAW);
     vertex_shader = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(vertex_shader, 1, &vertex_shader_text, NULL);
     glCompileShader(vertex_shader);
@@ -116,23 +129,25 @@ int main(int, char**)
     bool show_another_window = false;
     ImVec4 clear_color = ImColor(114, 144, 154);
 
+
+    //based on https://www.unknowncheats.me/forum/direct3d/189635-imgui-style-settings.html
     ImGuiStyle * style = &ImGui::GetStyle();
 
     	style->WindowPadding = ImVec2(15, 15);
-    	style->WindowRounding = 5.0f;
+    	style->WindowRounding = 0.0f;
     	style->FramePadding = ImVec2(5, 5);
     	style->FrameRounding = 4.0f;
     	style->ItemSpacing = ImVec2(12, 8);
     	style->ItemInnerSpacing = ImVec2(8, 6);
     	style->IndentSpacing = 25.0f;
-    	style->ScrollbarSize = 15.0f;
+    	style->ScrollbarSize = 8.0f;
     	style->ScrollbarRounding = 9.0f;
     	style->GrabMinSize = 5.0f;
     	style->GrabRounding = 3.0f;
 
     	style->Colors[ImGuiCol_Text] = ImVec4(0.80f, 0.80f, 0.83f, 1.00f);
     	style->Colors[ImGuiCol_TextDisabled] = ImVec4(0.24f, 0.23f, 0.29f, 1.00f);
-    	style->Colors[ImGuiCol_WindowBg] = ImVec4(0.06f, 0.05f, 0.07f, 1.00f);
+    	style->Colors[ImGuiCol_WindowBg] = ImVec4(0.06f, 0.05f, 0.07f, 0.85f);
     	style->Colors[ImGuiCol_ChildWindowBg] = ImVec4(0.07f, 0.07f, 0.09f, 1.00f);
     	style->Colors[ImGuiCol_PopupBg] = ImVec4(0.07f, 0.07f, 0.09f, 1.00f);
     	style->Colors[ImGuiCol_Border] = ImVec4(0.80f, 0.80f, 0.83f, 0.88f);
@@ -141,7 +156,7 @@ int main(int, char**)
     	style->Colors[ImGuiCol_FrameBgHovered] = ImVec4(0.24f, 0.23f, 0.29f, 1.00f);
     	style->Colors[ImGuiCol_FrameBgActive] = ImVec4(0.56f, 0.56f, 0.58f, 1.00f);
     	style->Colors[ImGuiCol_TitleBg] = ImVec4(0.10f, 0.09f, 0.12f, 1.00f);
-    	style->Colors[ImGuiCol_TitleBgCollapsed] = ImVec4(1.00f, 0.98f, 0.95f, 0.75f);
+    	style->Colors[ImGuiCol_TitleBgCollapsed] = ImVec4(0.10f, 0.09f, 0.12f, 1.00f);
     	style->Colors[ImGuiCol_TitleBgActive] = ImVec4(0.07f, 0.07f, 0.09f, 1.00f);
     	style->Colors[ImGuiCol_MenuBarBg] = ImVec4(0.10f, 0.09f, 0.12f, 1.00f);
     	style->Colors[ImGuiCol_ScrollbarBg] = ImVec4(0.10f, 0.09f, 0.12f, 1.00f);
@@ -167,38 +182,40 @@ int main(int, char**)
     	style->Colors[ImGuiCol_CloseButton] = ImVec4(0.40f, 0.39f, 0.38f, 0.16f);
     	style->Colors[ImGuiCol_CloseButtonHovered] = ImVec4(0.40f, 0.39f, 0.38f, 0.39f);
     	style->Colors[ImGuiCol_CloseButtonActive] = ImVec4(0.40f, 0.39f, 0.38f, 1.00f);
-    	style->Colors[ImGuiCol_PlotLines] = ImVec4(0.40f, 0.39f, 0.38f, 0.63f);
+    	style->Colors[ImGuiCol_PlotLines] = ImVec4(0.63f, 0.6f, 0.6f, 0.94f);
     	style->Colors[ImGuiCol_PlotLinesHovered] = ImVec4(0.25f, 1.00f, 0.00f, 1.00f);
-    	style->Colors[ImGuiCol_PlotHistogram] = ImVec4(0.40f, 0.39f, 0.38f, 0.63f);
+    	style->Colors[ImGuiCol_PlotHistogram] = ImVec4(0.63f, 0.6f, 0.6f, 0.94f);
     	style->Colors[ImGuiCol_PlotHistogramHovered] = ImVec4(0.25f, 1.00f, 0.00f, 1.00f);
     	style->Colors[ImGuiCol_TextSelectedBg] = ImVec4(0.25f, 1.00f, 0.00f, 0.43f);
     	style->Colors[ImGuiCol_ModalWindowDarkening] = ImVec4(1.00f, 0.98f, 0.95f, 0.73f);
 
 
-      ImGui::GetIO().MouseDrawCursor=true;
+      // ImGui::SetupImGuiStyle(true,1.0f);
+
+      // ImGui::GetIO().MouseDrawCursor=true;
 
       //curve
-      ImVec2 foo[5];
-      // foo[0].x = -1;
+      ImVec2 foo[10];
+      foo[0].x = -1;
 
 
-      foo[0].x = 0.0; // init data so editor knows to take it from here
-      foo[1].x = 0.2;
-      foo[2].x = 0.4;
-      foo[3].x = 0.6;
-      foo[4].x = 1.0;
+      // foo[0].x = 0.0; // init data so editor knows to take it from here
+      // foo[1].x = 0.2;
+      // foo[2].x = 0.4;
+      // foo[3].x = 0.6;
+      // foo[4].x = 1.0;
+      //
+      // foo[0].y = 0.2; // init data so editor knows to take it from here
+      // foo[1].y = 0.6;
+      // foo[2].y = 0.2;
+      // foo[3].y = 0.8;
+      // foo[4].y = 0.1;
 
-      foo[0].y = 0.2; // init data so editor knows to take it from here
-      foo[1].y = 0.6;
-      foo[2].y = 0.2;
-      foo[3].y = 0.8;
-      foo[4].y = 0.1;
 
-
-      std::cout << "-------------" << '\n';
-      for (size_t i = 0; i < 5; i++) {
-        std::cout << "at " << foo[i].x << " val is " << foo[i].y << '\n';
-      }
+      // std::cout << "-------------" << '\n';
+      // for (size_t i = 0; i < 5; i++) {
+      //   std::cout << "at " << foo[i].x << " val is " << foo[i].y << '\n';
+      // }
 
     // Main loop
     while (!glfwWindowShouldClose(window))
@@ -207,12 +224,14 @@ int main(int, char**)
         ImGui_ImplGlfwGL3_NewFrame();
 
 
+        ImGui::Text("%s Search", ICON_FA_SEARCH);
+
         // std::cout << "-------------" << '\n';
         // for (size_t i = 0; i < 5; i++) {
         //   std::cout << "at " << foo[i].x << " val is " << foo[i].y << '\n';
         // }
 
-         if (ImGui::Curve("Das editor", ImVec2(400, 200), 5, foo))
+         if (ImGui::Curve("Das editor", ImVec2(400, 200), 10, foo))
          {
             // foo[0].y=ImGui::CurveValue(foo[0].x, 5, foo);
             // foo[1].y=ImGui::CurveValue(foo[1].x, 5, foo);
@@ -224,11 +243,14 @@ int main(int, char**)
         //  float value_you_care_about = ImGui::CurveValue(0.6f, 5, foo); // calculate value at position 0.7
         //  std::cout << "value is " << value_you_care_about << '\n';
 
+        // vertices[0].r = ImGui::CurveValue(vertices[0].x, 10, foo); // calculate value at position 0.7
 
 
 
 
-
+        if (ImGui::Button("Vsync")){
+          glfwSwapInterval(0);
+        }
 
 
 
@@ -275,9 +297,9 @@ int main(int, char**)
         glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
         mat4x4_identity(m);
 
-        float speed;
-        float translate_x,translate_y,translate_z;
-        float rotate_x;
+        float speed=0.0;
+        float translate_x=0.0,translate_y=0.0,translate_z=0.0;
+        float rotate_x=0.0;
         ImGui::SliderFloat("speed", &speed, 0.0f, 10.0f);
         ImGui::SliderFloat("translate_x", &translate_x, -10.0f, 10.0f);
         ImGui::SliderFloat("translate_y", &translate_y, -10.0f, 10.0f);
