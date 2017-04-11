@@ -1,15 +1,21 @@
 #include <iostream>
+#include <memory>
 
+//IMGUI
 #include <imgui.h>
 #include "imgui_impl_glfw_gl3.h"
+#include "curve.hpp"
+#include "IconsFontAwesome.h"
+
+//OPENGL
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include "linmath.h"
-#include "curve.hpp"
-// #include "ImGuiUtils.h"
-#include "IconsFontAwesome.h"
 
+// #include "ImGuiUtils.h"
+
+#include "baseline/ShaderProgram.h"
 
 
 
@@ -23,22 +29,6 @@ static struct
     {  0.6f, -0.4f, 0.f, 1.f, 0.f },
     {   0.f,  0.6f, 0.f, 0.f, 1.f }
 };
-static const char* vertex_shader_text =
-"uniform mat4 MVP;\n"
-"attribute vec3 vCol;\n"
-"attribute vec2 vPos;\n"
-"varying vec3 color;\n"
-"void main()\n"
-"{\n"
-"    gl_Position = MVP * vec4(vPos, 0.0, 1.0);\n"
-"    color = vCol;\n"
-"}\n";
-static const char* fragment_shader_text =
-"varying vec3 color;\n"
-"void main()\n"
-"{\n"
-"    gl_FragColor = vec4(color, 1.0);\n"
-"}\n";
 
 
 static void error_callback(int error, const char* description)
@@ -56,6 +46,7 @@ int main(int, char**)
         return 1;
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 #if __APPLE__
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
@@ -67,6 +58,20 @@ int main(int, char**)
     // glfwSwapInterval(0);
 
     gladLoadGLLoader((GLADloadproc) glfwGetProcAddress);
+
+
+
+    //INIT IMGUI
+
+
+    //INIT SHADERS
+    std::shared_ptr<ShaderProgram> shader_program (new ShaderProgram);
+    shader_program->initFromFiles("shaders/vert_shader.glsl", "shaders/frag_shader.glsl");
+    shader_program->addUniform("MVP");
+    shader_program->addAttribute("vCol");
+    shader_program->addAttribute("vPos");
+
+
 
     // Setup ImGui binding
     ImGui_ImplGlfwGL3_Init(window, true);
@@ -103,24 +108,13 @@ int main(int, char**)
     glGenBuffers(1, &vertex_buffer);
     glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_DYNAMIC_DRAW);
-    vertex_shader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertex_shader, 1, &vertex_shader_text, NULL);
-    glCompileShader(vertex_shader);
-    fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragment_shader, 1, &fragment_shader_text, NULL);
-    glCompileShader(fragment_shader);
-    program = glCreateProgram();
-    glAttachShader(program, vertex_shader);
-    glAttachShader(program, fragment_shader);
-    glLinkProgram(program);
-    mvp_location = glGetUniformLocation(program, "MVP");
-    vpos_location = glGetAttribLocation(program, "vPos");
-    vcol_location = glGetAttribLocation(program, "vCol");
-    glEnableVertexAttribArray(vpos_location);
-    glVertexAttribPointer(vpos_location, 2, GL_FLOAT, GL_FALSE,
+
+
+    glEnableVertexAttribArray(shader_program->attribute("vPos"));
+    glVertexAttribPointer(shader_program->attribute("vPos"), 2, GL_FLOAT, GL_FALSE,
                          sizeof(float) * 5, (void*) 0);
-    glEnableVertexAttribArray(vcol_location);
-    glVertexAttribPointer(vcol_location, 3, GL_FLOAT, GL_FALSE,
+    glEnableVertexAttribArray(shader_program->attribute("vCol"));
+    glVertexAttribPointer(shader_program->attribute("vCol"), 3, GL_FLOAT, GL_FALSE,
                          sizeof(float) * 5, (void*) (sizeof(float) * 2));
 
 
@@ -171,7 +165,7 @@ int main(int, char**)
     	style->Colors[ImGuiCol_ButtonHovered] = ImVec4(0.24f, 0.23f, 0.29f, 1.00f);
     	style->Colors[ImGuiCol_ButtonActive] = ImVec4(0.56f, 0.56f, 0.58f, 1.00f);
     	style->Colors[ImGuiCol_Header] = ImVec4(0.10f, 0.09f, 0.12f, 1.00f);
-    	style->Colors[ImGuiCol_HeaderHovered] = ImVec4(0.56f, 0.56f, 0.58f, 1.00f);
+    	style->Colors[ImGuiCol_HeaderHovered] = ImVec4(0.56f, 0.56f, 0.58f, 0.35f);
     	style->Colors[ImGuiCol_HeaderActive] = ImVec4(0.06f, 0.05f, 0.07f, 1.00f);
     	style->Colors[ImGuiCol_Column] = ImVec4(0.56f, 0.56f, 0.58f, 1.00f);
     	style->Colors[ImGuiCol_ColumnHovered] = ImVec4(0.24f, 0.23f, 0.29f, 1.00f);
@@ -218,13 +212,19 @@ int main(int, char**)
       // }
 
     // Main loop
+
+    float speed=0.0;
+    float translate_x=0.0,translate_y=0.0,translate_z=0.0;
+    float rotate_x=0.0;
+
     while (!glfwWindowShouldClose(window))
     {
+      // printf("%s\n", glGetString(GL_VERSION));
         glfwPollEvents();
         ImGui_ImplGlfwGL3_NewFrame();
 
 
-        ImGui::Text("%s Search", ICON_FA_SEARCH);
+        // ImGui::Text("%s Search", ICON_FA_SEARCH);
 
         // std::cout << "-------------" << '\n';
         // for (size_t i = 0; i < 5; i++) {
@@ -297,10 +297,10 @@ int main(int, char**)
         glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
         mat4x4_identity(m);
 
-        float speed=0.0;
-        float translate_x=0.0,translate_y=0.0,translate_z=0.0;
-        float rotate_x=0.0;
-        ImGui::SliderFloat("speed", &speed, 0.0f, 10.0f);
+
+        if (ImGui::SliderFloat("speed", &speed, 0.0f, 10.0f)){
+          std::cout << "value has been modified" << '\n';
+        }
         ImGui::SliderFloat("translate_x", &translate_x, -10.0f, 10.0f);
         ImGui::SliderFloat("translate_y", &translate_y, -10.0f, 10.0f);
         ImGui::SliderFloat("translate_z", &translate_z, -10.0f, 10.0f);
@@ -315,8 +315,11 @@ int main(int, char**)
 
         mat4x4_ortho(p, -ratio, ratio, -1.f, 1.f, 1.f, -1.f);
         mat4x4_mul(mvp, p, m);
-        glUseProgram(program);
-        glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat*) mvp);
+        
+
+        shader_program->use();
+        glUniformMatrix4fv(shader_program->uniform("MVP"), 1, GL_FALSE, (const GLfloat*) mvp);
+
         glDrawArrays(GL_TRIANGLES, 0, 3);
 
 
