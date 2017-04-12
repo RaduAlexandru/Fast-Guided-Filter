@@ -49,5 +49,6 @@ file(GLOB IMGUI_SRC ${CMAKE_SOURCE_DIR}/deps/imgui/*.cpp)
 message (${IMGUI_SRC})
 
 
-add_executable(baseline src/main.cxx deps/glad/glad.c src/ShaderProgram.cxx  ${IMGUI_SRC})
+add_executable(baseline src/main.cxx deps/glad/glad.c src/ShaderProgram.cxx src/Gui.cxx src/ShaderProgram.cxx src/Renderer.cxx
+ src/Scene.cxx  src/Simulation.cxx  ${IMGUI_SRC})
 target_link_libraries(baseline ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${OpenCV_LIBS} ${OPENGL_gl_LIBRARY} ${GLFW_LIBRARIES})
