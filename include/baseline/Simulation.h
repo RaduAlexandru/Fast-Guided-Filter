@@ -13,6 +13,7 @@ public:
   std::shared_ptr<Scene> m_scene;
 
   void init (std::shared_ptr<Scene> scene, std::shared_ptr<Renderer> renderer);
+  void update ();
 private:
 
 };

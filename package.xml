@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>baseline</name>
+  <name>guided_filter</name>
   <version>0.0.0</version>
   <description>Baseline package cointaining all the necessary pieces to start any other project. Contains ROS integration, UI and OpenGL renderer</description>
 

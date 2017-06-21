@@ -1,5 +1,6 @@
 #include <iostream>
 #include <memory>
+#include <chrono>
 
 
 //OPENGL
@@ -16,18 +17,28 @@
 #include "baseline/Scene.h"
 #include "baseline/Simulation.h"
 
+#include "baseline/GuidedFilter.h"
+#include "baseline/GuidedFilterCL.h"
 
+#include <opencv2/core.hpp>
+#include <opencv2/imgproc.hpp>
+#include <opencv2/highgui.hpp>
+#include <opencv2/features2d.hpp>
+#include "opencv2/core/ocl.hpp"
+#include "opencv2/ximgproc.hpp"
 
-static struct
-{
-    float x, y;
-    float r, g, b;
-} vertices[3] =
-{
-    { -0.6f, -0.4f, 1.f, 0.f, 0.f },
-    {  0.6f, -0.4f, 0.f, 1.f, 0.f },
-    {   0.f,  0.6f, 0.f, 0.f, 1.f }
+// //opencl
+// #define __CL_ENABLE_EXCEPTIONS
+// #include <CL/cl.h>
+// #include <CL/cl_intel.h>
+// #include <baseline/cl.hpp>
+
+struct Frame {
+  cv::Mat left_rgb, right_rgb, left_gray, right_gray;
 };
+
+void read_images(std::string img_left_path, std::string img_right_path, Frame& frame);
+
 
 
 static void error_callback(int error, const char* description)
@@ -76,6 +87,24 @@ int main(int, char**){
     shader_program->addAttribute("vCol");
     shader_program->addAttribute("vPos");
 
+    //timing
+    float time_avg=0;
+    int times_count=1;
+
+
+    std::string img_left_path="/media/alex/Data/Master/SHK/Data/middelbury/tsukuba/scene1.row3.col2.ppm";
+    std::string img_right_path="/media/alex/Data/Master/SHK/Data/middelbury/tsukuba/scene1.row3.col5.ppm";
+    //read images
+    Frame frame;
+    read_images(img_left_path, img_right_path, frame);
+
+
+    //Guided filter
+    int gf_radius=3;
+    float gf_eps=10.0f;
+    int gf_scale=4;
+    // GuidedFilter guided_filter(frame.left_gray, gf_radius,gf_eps);
+
 
 
     while(true){
@@ -87,116 +116,68 @@ int main(int, char**){
 
 
       gui->update();
-      // sim->update();
+      sim->update();
       renderer->draw();
 
 
 
+
+      //smooth it
+      //GUI GUIDED FILTER
+      if (ImGui::TreeNode("GUIDED FILTER ")){
+        ImGui::SliderInt("gf_radius", &gf_radius, 1, 50);
+        ImGui::SliderFloat("gf_eps", &gf_eps, 0.0f, 2550.0f);
+        ImGui::SliderInt("gf_scale", &gf_scale, 1, 7);
+        ImGui::TreePop();
+      }
+
+
+
+
+
+
+
+      GuidedFilter guided_filter(frame.left_gray, gf_radius, gf_eps, gf_scale);
+      GuidedFilterCL guided_filterCL();
+      cv::Ptr<cv::ximgproc::GuidedFilter> gf_filter = cv::ximgproc::createGuidedFilter(frame.left_gray,gf_radius,gf_eps);
+
+
+      cv::Mat smoothed;
+      std::chrono::steady_clock::time_point begin_detect = std::chrono::steady_clock::now();
+      smoothed = guided_filter.filter(frame.left_gray);
+      // gf_filter->filter(frame.left_gray,smoothed,frame.left_gray.depth());
+      std::chrono::steady_clock::time_point end_detect= std::chrono::steady_clock::now();
+
+
+      cv::imshow("smoothed", smoothed);
+      cv::waitKey(1);
+
+
+
+
+
+      float time_f= std::chrono::duration_cast<std::chrono::nanoseconds>(end_detect - begin_detect).count() /1e6 ;
+      time_avg = time_avg + (time_f - time_avg)/times_count;
+      times_count++;
+      ImGui::Text("Time frame (%.3f ms): ", time_f );
+      ImGui::Text("Time avg (%.3f ms): ", time_avg );
+
+
       ImGui::Render();
       glfwSwapBuffers(window);
-
-
-
-
     }
-
-
-
-    // GLuint vertex_buffer, vertex_shader, fragment_shader, program;
-    // GLint mvp_location, vpos_location, vcol_location;
-    //
-    // // glfwSwapInterval(0);
-    //
-    //
-    //
-    //
-    //
-    //
-    //
-    // GLuint VertexArrayID;
-    // glGenVertexArrays(1, &VertexArrayID);
-    // glBindVertexArray(VertexArrayID);
-    //
-    //
-    // glGenBuffers(1, &vertex_buffer);
-    // glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
-    // glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_DYNAMIC_DRAW);
-    //
-    //
-    // glEnableVertexAttribArray(shader_program->attribute("vPos"));
-    // glVertexAttribPointer(shader_program->attribute("vPos"), 2, GL_FLOAT, GL_FALSE,
-    //                      sizeof(float) * 5, (void*) 0);
-    // glEnableVertexAttribArray(shader_program->attribute("vCol"));
-    // glVertexAttribPointer(shader_program->attribute("vCol"), 3, GL_FLOAT, GL_FALSE,
-    //                      sizeof(float) * 5, (void*) (sizeof(float) * 2));
-    //
-    // ImVec4 clear_color = ImColor(114, 144, 154);
-    //
-    //
-    //
-    //
-    //
-    // // Main loop
-    //
-    // float speed=0.0;
-    // float translate_x=0.0,translate_y=0.0,translate_z=0.0;
-    // float rotate_x=0.0;
-    //
-    // while (!glfwWindowShouldClose(window))
-    // {
-    //   // printf("%s\n", glGetString(GL_VERSION));
-    //     glfwPollEvents();
-    //     ImGui_ImplGlfwGL3_NewFrame();
-    //     ImGui::Text("%s Search", ICON_FA_SEARCH);
-    //     gui->update();
-    //
-    //
-    //
-    //
-    //     float ratio;
-    //     int width, height;
-    //     mat4x4 m, p, mvp;
-    //     glfwGetFramebufferSize(window, &width, &height);
-    //     ratio = width / (float) height;
-    //     glViewport(0, 0, width, height);
-    //     glClear(GL_COLOR_BUFFER_BIT);
-    //     glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
-    //     mat4x4_identity(m);
-    //
-    //
-    //     // if (ImGui::SliderFloat("speed", &speed, 0.0f, 10.0f)){
-    //     //   std::cout << "value has been modified" << '\n';
-    //     // }
-    //     // ImGui::SliderFloat("translate_x", &translate_x, -10.0f, 10.0f);
-    //     // ImGui::SliderFloat("translate_y", &translate_y, -10.0f, 10.0f);
-    //     // ImGui::SliderFloat("translate_z", &translate_z, -10.0f, 10.0f);
-    //     // ImGui::SliderFloat("rotate_x", &rotate_x, -10.0f, 10.0f);
-    //
-    //     mat4x4_translate_in_place(m,translate_x, translate_y, translate_z);
-    //
-    //     mat4x4_rotate_Z(m, m, (float) glfwGetTime()+speed);
-    //     mat4x4_rotate_X(m, m, rotate_x);
-    //     // mat4x4_rotate_Z(m, m, speed);
-    //
-    //
-    //     mat4x4_ortho(p, -ratio, ratio, -1.f, 1.f, 1.f, -1.f);
-    //     mat4x4_mul(mvp, p, m);
-    //
-    //
-    //     shader_program->use();
-    //     glUniformMatrix4fv(shader_program->uniform("MVP"), 1, GL_FALSE, (const GLfloat*) mvp);
-    //
-    //     glDrawArrays(GL_TRIANGLES, 0, 3);
-    //
-    //
-    //     ImGui::Render();
-    //     // ImGui::GetDrawData();
-    //     glfwSwapBuffers(window);
-    // }
 
     // Cleanup
     ImGui_ImplGlfwGL3_Shutdown();
     glfwTerminate();
 
     return 0;
+}
+
+
+void read_images(std::string img_left_path, std::string img_right_path, Frame& frame){
+  frame.left_rgb=cv::imread(img_left_path);
+  frame.right_rgb=cv::imread(img_right_path);
+  cv::cvtColor(frame.left_rgb,frame.left_gray, CV_BGR2GRAY);
+  cv::cvtColor(frame.right_rgb,frame.right_gray, CV_BGR2GRAY);
 }
